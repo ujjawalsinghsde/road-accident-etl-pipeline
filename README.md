@@ -31,7 +31,7 @@ The pipeline follows the **Medallion Architecture (Bronze → Silver → Gold)**
 Here’s the **Databricks Job & Pipeline image** (uploaded in repository):  
 
 <div align="center">
-    <img src="assets/job&pipeline.png" width="400" />
+    <img src="assets/job&pipeline.png" width="100%" />
 </div>
 
 
