@@ -1,11 +1,107 @@
-# Road Accident Analysis ETL Pipeline
+# 🚦 Road Accident Analysis ETL Pipeline
 
-This document contains both explanations and the complete code from all project files, organized by section.
+## 📌 Project Overview
+This project demonstrates an **end-to-end ETL pipeline for Road Accident Analysis** built on **Databricks**.  
+It ingests raw accident data, applies quality checks, transforms it into clean datasets, and enables visual dashboards for decision-making.  
+The pipeline follows the **Medallion Architecture (Bronze → Silver → Gold)** and ensures **data governance, security, and scalability**.
 
 ---
-## 1. aggregation.py
 
-**Purpose:** Aggregates accident data for reporting and dashboarding.
+## 🛠️ Technology Stack
+- **Python & SQL** – Data processing & queries  
+- **Databricks Notebook** – ETL orchestration  
+- **Auto Loader** – Scalable ingestion with schema evolution  
+- **Delta Lake** – Bronze, Silver, and Gold tables  
+- **Unity Catalog** – Security & access control  
+- **Serverless SQL** – Interactive queries & reporting  
+
+---
+
+## 🔄 ETL Pipeline Stages
+1. **Data Generation** – Faker + Spark to simulate accident records  
+2. **Data Ingestion (Bronze)** – Databricks Auto Loader with schema evolution  
+3. **Data Quality (Silver)** – Validations + split into good/bad records  
+4. **Aggregation (Gold)** – Accident insights (area, severity, weather, causes, etc.)  
+5. **Security (Unity Catalog)** – RBAC & dynamic masking on sensitive fields  
+6. **Visualization** – Dashboards for accident trends and insights  
+
+---
+
+## 📊 Pipeline Workflow
+Here’s the **Databricks Job & Pipeline image** (uploaded in repository):  
+
+![Databricks Pipeline](assets/job&pipeline.png)  
+
+
+## 📊 Dashboard Insights
+The final dashboards provide **business-ready visualizations** from the Gold Layer tables.  
+
+**Area-Wise Total Accidents** – Identifies accident hotspots for infrastructure planning.  
+![Area Wise](assets/AreaWiseTotalAccidents.png)
+
+**Day of Week Accident Trend** – Highlights weekdays/weekends with higher risks.  
+![Day of Week](assets/DayOfWeekAccidentTrend.png)
+
+**Hour of Day Accident Trend** – Shows peak accident hours for better resource allocation.  
+![Hour of Day](assets/HourOfDayAccidentTrend.png)
+
+**Accident Severity Distribution** – Breakdown into fatal, serious, and minor categories.  
+![Severity Distribution](assets/AccidentSeverityDistribution.png)
+
+**Gender-wise Fatalities** – Compares accident impact by gender.  
+![Gender Fatalities](assets/GenderWiseFatalities.png)
+
+**Age Band Fatalities** – Identifies vulnerable age groups.  
+![Age Band Fatalities](assets/AgeBandFatalities.png)
+
+**Driving Experience vs. Accident Count** – Links experience level with accident likelihood.  
+![Driving Experience](assets/DrivingExperiencevsAccidentCount.png)
+
+**Weather-wise Accidents** – Shows accident distribution under Normal, Rain, Fog, etc.  
+![Weather Conditions](assets/WeatherWiseAccidents.png)
+
+**Road Surface Conditions** – Correlates road quality with accident frequency.  
+![Road Surface](assets/RoadSurfaceConditions.png)
+
+**Light Condition Accidents** – Compares daylight vs. night-time accidents.  
+![Light Conditions](assets/LightConditionAccidents.png)
+
+**Top 10 Causes of Accidents** – Lists overspeeding, distractions, and other key causes.  
+![Causes of Accidents](assets/Top10CausesOfAccidents.png)
+
+
+## 📂 Repository Structure
+```
+
+├── notebooks/         # Databricks notebooks for ETL
+├── scripts/           # Python data generator
+├── sql/               # SQL queries for aggregations
+├── assets/            # Pipeline & dashboard images
+└── README.md          # Project documentation
+
+```
+
+---
+
+## 💻 How to Use
+1. Clone this repository:
+```bash
+git clone https://github.com/ayeujjawalsingh/road-accident_etl-pipeline.git
+cd road-accident_etl-pipeline
+```
+
+2. Open the Databricks notebooks under `notebooks/`.
+3. Run the pipeline to simulate data, ingest, and transform.
+4. Explore dashboards using Databricks SQL/BI tools.
+
+---
+
+## 📜 Complete Project Code
+
+This section contains **all project files with explanations**.
+
+<details>
+<summary>🔹 aggregation.py</summary>
 
 ```python
 from pyspark.sql.functions import count, year, col, to_timestamp
@@ -44,17 +140,12 @@ death_report_df = df.filter(col("Casualty_severity").isin("Fatal injury", "Serio
     "Casualty_severity"
 )
 death_report_df.write.mode("overwrite").saveAsTable("csb_grp_5.autoloader_pipeline.death_report_details")
-
-################
-# 3. Gender Accident Breakdown based on age
-#age_sex_df = df.groupBy("Age_band_of_casualty", "Sex_of_casualty") .agg(count("*").alias("Accident_Count"))
-#.write.mode("overwrite").saveAsTable("databricks_csb_grp_5
 ```
 
----
-## 2. autoloader.py
+</details>
 
-**Purpose:** Ingests new accident data files using Databricks Autoloader (cloudFiles).
+<details>
+<summary>🔹 autoloader.py</summary>
 
 ```python
 from pyspark.sql.functions import *
@@ -85,10 +176,10 @@ query = (
 )
 ```
 
----
-## 3. DataCleaningSilverLayer.py
+</details>
 
-**Purpose:** Cleans and validates raw accident data, normalizes categorical fields, and splits into valid/invalid datasets.
+<details>
+<summary>🔹 DataCleaningSilverLayer.py</summary>
 
 ```python
 from pyspark.sql import SparkSession
@@ -179,10 +270,10 @@ if __name__ == "__main__":
     main()
 ```
 
----
-## 4. DataGeneration.txt
+</details>
 
-**Purpose:** Synthetic accident data generation log (sample corruption events).
+<details>
+<summary>🔹 DataGeneration.txt (logs)</summary>
 
 ```
 2025-08-20 11:49:21,971 - INFO - Starting dataset generation...
@@ -192,10 +283,10 @@ if __name__ == "__main__":
 ...existing log lines...
 ```
 
----
-## 5. GenerateData.py
+</details>
 
-**Purpose:** Generates synthetic accident data with optional corruption for testing.
+<details>
+<summary>🔹 GenerateData.py</summary>
 
 ```python
 import random
@@ -306,10 +397,10 @@ if __name__ == "__main__":
         traceback.print_exc()
 ```
 
----
-## 6. RBAC.py
+</details>
 
-**Purpose:** Implements user-group-based masking for sensitive fields in SQL views.
+<details>
+<summary>🔹 RBAC.py</summary>
 
 ```sql
 %md
@@ -448,10 +539,10 @@ update databricks_csb_grp_5.default.user_groups set groupname='data_readers' whe
 select * from databricks_csb_grp_5.default.vw_accident_basic_info
 ```
 
----
-## 7. RoadAccidentAnalysisNotebook.py
+</details>
 
-**Purpose:** Provides SQL queries for dashboard visualizations and insights.
+<details>
+<summary>🔹 RoadAccidentAnalysisNotebook.py</summary>
 
 ```sql
 %md
@@ -626,10 +717,10 @@ ORDER BY total_accidents DESC
 LIMIT 10;
 ```
 
----
-## 8. variables.py
+</details>
 
-**Purpose:** Centralized definitions for categorical values used in data generation and cleaning.
+<details>
+<summary>🔹 variables.py</summary>
 
 ```python
 import calendar
@@ -704,3 +795,13 @@ CAUSE_OF_ACCIDENT = (
 
 ACCIDENT_SEVERITY = "Slight Injury,Serious Injury,Fatal injury"
 ```
+
+</details>
+
+---
+
+## 🏁 Conclusion
+
+This pipeline provides a **scalable, secure, and automated ETL solution** for road accident data.
+It helps **governments, policymakers, and analysts** gain insights into accident causes and trends, enabling data-driven safety initiatives.
+
