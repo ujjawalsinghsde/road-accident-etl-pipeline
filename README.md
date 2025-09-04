@@ -217,19 +217,6 @@ LIMIT 10;
 
 ---
 
-## 💻 How to Use
-1. Clone this repository:
-```bash
-git clone https://github.com/ayeujjawalsingh/road-accident_etl-pipeline.git
-cd road-accident_etl-pipeline
-```
-
-2. Open the Databricks notebooks under `notebooks/`.
-3. Run the pipeline to simulate data, ingest, and transform.
-4. Explore dashboards using Databricks SQL/BI tools.
-
----
-
 ## 📜 Complete Project Code
 
 This section contains **all project files with explanations**.
