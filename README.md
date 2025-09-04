@@ -204,17 +204,6 @@ LIMIT 10;
     <img src="assets/Top10CausesOfAccidents.png" width="400" />
 </div>
 
-## 📂 Repository Structure
-```
-
-├── notebooks/         # Databricks notebooks for ETL
-├── scripts/           # Python data generator
-├── sql/               # SQL queries for aggregations
-├── assets/            # Pipeline & dashboard images
-└── README.md          # Project documentation
-
-```
-
 ---
 
 ## 📜 Complete Project Code
