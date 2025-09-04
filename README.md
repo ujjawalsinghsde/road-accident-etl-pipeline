@@ -45,7 +45,7 @@ Identifies accident hotspots for infrastructure planning.
 SELECT 
     Area_accident_occured AS area,
     Total_Accidents
-FROM csb_grp_5.autoloader_pipeline.area_year_accidents
+FROM main_cluster.autoloader_pipeline.area_year_accidents
 ORDER BY total_accidents DESC;
 ```
 <div align="center">
@@ -58,7 +58,7 @@ Highlights weekdays/weekends with higher risks.
 SELECT 
     Day_of_week,
     COUNT(*) AS total_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 GROUP BY Day_of_week
 ORDER BY 
     CASE Day_of_week
@@ -81,7 +81,7 @@ Shows peak accident hours for better resource allocation.
 SELECT 
     hour(try_to_timestamp(Time, 'H:mm:ss')) AS hour_of_day,
     COUNT(*) AS total_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 GROUP BY hour(try_to_timestamp(Time, 'H:mm:ss'))
 ORDER BY hour_of_day;
 ```
@@ -95,7 +95,7 @@ Breakdown into fatal, serious, and minor categories.
 SELECT 
     Accident_severity,
     Count
-FROM csb_grp_5.autoloader_pipeline.accident_severity_breakdown;
+FROM main_cluster.autoloader_pipeline.accident_severity_breakdown;
 ```
 <div align="center">
     <img src="assets/AccidentSeverityDistribution.png" width="400" />
@@ -108,7 +108,7 @@ SELECT
     Sex_of_driver, 
     Casualty_severity,
     COUNT(*) AS death_count
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 WHERE Casualty_severity = :severity
 GROUP BY Sex_of_driver, Casualty_severity;
 ```
@@ -122,7 +122,7 @@ Identifies vulnerable age groups.
 SELECT 
     Age_band_of_driver,
     COUNT(*) AS fatal_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 WHERE Casualty_severity = 'Serious Injury'
 GROUP BY Age_band_of_driver
 ORDER BY fatal_accidents DESC;
@@ -137,7 +137,7 @@ Links experience level with accident likelihood.
 SELECT 
     Driving_experience,
     COUNT(*) AS total_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 GROUP BY Driving_experience
 ORDER BY total_accidents DESC;
 ```
@@ -151,7 +151,7 @@ Shows accident distribution under Normal, Rain, Fog, etc.
 SELECT 
     Cause_of_accident,
     COUNT(*) AS total_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 WHERE Weather_conditions IN (:weather)
 GROUP BY Cause_of_accident
 ORDER BY total_accidents DESC
@@ -167,7 +167,7 @@ Correlates road quality with accident frequency.
 SELECT 
     Road_surface_conditions,
     COUNT(*) AS total_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 GROUP BY Road_surface_conditions
 ORDER BY total_accidents DESC;
 ```
@@ -181,7 +181,7 @@ Compares daylight vs. night-time accidents.
 SELECT 
     Light_conditions,
     COUNT(*) AS total_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 GROUP BY Light_conditions
 ORDER BY total_accidents DESC;
 ```
@@ -195,7 +195,7 @@ Lists overspeeding, distractions, and other key causes.
 SELECT 
     Cause_of_accident,
     COUNT(*) AS total_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 GROUP BY Cause_of_accident
 ORDER BY total_accidents DESC
 LIMIT 10;
@@ -216,24 +216,29 @@ This section contains **all project files with explanations**.
 ```python
 from pyspark.sql.functions import count, year, col, to_timestamp
 
-# Read the existing table
-df = spark.table("csb_grp_5.autoloader_pipeline.silver_filtered_data")
+# Load Silver Layer data
+df = spark.table("main_cluster.autoloader_pipeline.silver_filtered_data")
 
 # 1. State-wise Total Accidents by Year
-# Extract Year from Time column
 df_with_year = df.withColumn("Year", year(to_timestamp(col("Time"))))
-
-# Group by Area_accident_occured and Year
-state_year_df = df_with_year.groupBy("Area_accident_occured", "Year").agg(count("*").alias("Total_Accidents"))
-# Save the result
-state_year_df.write.mode("overwrite").saveAsTable("csb_grp_5.autoloader_pipeline.area_year_accidents")
+state_year_df = (
+    df_with_year.groupBy("Area_accident_occured", "Year")
+    .agg(count("*").alias("Total_Accidents"))
+)
+state_year_df.write.mode("overwrite").saveAsTable(
+    "main_cluster.autoloader_pipeline.area_year_accidents"
+)
 
 # 2. Accident Severity Breakdown
 severity_df = df.groupBy("Accident_severity").agg(count("*").alias("Count"))
-severity_df.write.mode("overwrite").saveAsTable("csb_grp_5.autoloader_pipeline.accident_severity_breakdown")
+severity_df.write.mode("overwrite").saveAsTable(
+    "main_cluster.autoloader_pipeline.accident_severity_breakdown"
+)
 
-# Filter for deceased individuals (Casualty_severity == "Fatal injury" or "Serious Injury")
-death_report_df = df.filter(col("Casualty_severity").isin("Fatal injury", "Serious Injury")).select(
+# 3. Fatal & Serious Injury Reports
+death_report_df = df.filter(
+    col("Casualty_severity").isin("Fatal injury", "Serious Injury")
+).select(
     "Sex_of_casualty",
     "Age_band_of_casualty",
     "Day_of_week",
@@ -249,7 +254,9 @@ death_report_df = df.filter(col("Casualty_severity").isin("Fatal injury", "Serio
     "Sex_of_driver",
     "Casualty_severity"
 )
-death_report_df.write.mode("overwrite").saveAsTable("csb_grp_5.autoloader_pipeline.death_report_details")
+death_report_df.write.mode("overwrite").saveAsTable(
+    "main_cluster.autoloader_pipeline.death_report_details"
+)
 ```
 
 </details>
@@ -261,28 +268,26 @@ death_report_df.write.mode("overwrite").saveAsTable("csb_grp_5.autoloader_pipeli
 from pyspark.sql.functions import *
 from pyspark.sql.types import StructType, StringType, IntegerType
 
-# Define input and checkpoint paths
-input_path = "/Volumes/databricks_csb_grp_5/default/accident_data"
-checkpoint_path = "/Volumes/databricks_csb_grp_5/default/autoloader_checkpoint"
-output_path = "/Volumes/csb_grp_5/autoloader_pipeline/raw_data"
+# Define paths
+input_path = "/Volumes/databricks_main_cluster/default/accident_data"
+checkpoint_path = "/Volumes/databricks_main_cluster/default/autoloader_checkpoint"
+output_path = "/Volumes/main_cluster/autoloader_pipeline/raw_data"
 
-# Read new files using Autoloader
+# Stream ingestion with Autoloader
 df = (
-    spark.readStream
-        .format("cloudFiles")
-        .option("cloudFiles.format", "csv")  # or "csv", "parquet", etc.
-        .option("cloudFiles.inferSchema", "true")
-        .option("cloudFiles.schemaLocation", checkpoint_path)  
-        .load(input_path)
+    spark.readStream.format("cloudFiles")
+    .option("cloudFiles.format", "csv")
+    .option("cloudFiles.inferSchema", "true")
+    .option("cloudFiles.schemaLocation", checkpoint_path)
+    .load(input_path)
 )
 
-# Write to Delta Lake or display in console
+# Write to Delta Lake
 query = (
-    df.writeStream
-      .format("delta")
-      .option("checkpointLocation", checkpoint_path)
-      .outputMode("append")
-      .start(output_path)
+    df.writeStream.format("delta")
+    .option("checkpointLocation", checkpoint_path)
+    .outputMode("append")
+    .start(output_path)
 )
 ```
 
@@ -310,68 +315,73 @@ def main():
         valid_accident_severity = ["slight injury", "serious injury", "fatal injury"]
         valid_age_band = ["18-30", "31-50", "under 18", "over 51"]
 
-        # Load data from DBFS file
-        # file_path = "dbfs:/mnt/bronze/accident_data.csv"
-        try:
-            bronze_df = spark.read.table('csb_grp_5.autoloader_pipeline.bronze_table')
-            logger.info("Data loaded from DBFS file successfully.")
-        except Exception as e:
-            logger.error(f"Failed to read data from DBFS file: {e}")
-            return
+        # Load Bronze data
+        bronze_df = spark.read.table("main_cluster.autoloader_pipeline.bronze_table")
 
-        df = bronze_df.withColumn("Number_of_vehicles_involved",
-                        when(col("Number_of_vehicles_involved").isNull(), lit(1))
-                        .otherwise(col("Number_of_vehicles_involved").cast("int")))
+        # Handle missing values and type casting
+        df = bronze_df.withColumn(
+            "Number_of_vehicles_involved",
+            when(col("Number_of_vehicles_involved").isNull(), lit(1)).otherwise(
+                col("Number_of_vehicles_involved").cast("int")
+            )
+        ).withColumn(
+            "Number_of_casualties",
+            when(col("Number_of_casualties").isNull(), lit(1)).otherwise(
+                col("Number_of_casualties").cast("int")
+            )
+        )
 
-        df = df.withColumn("Number_of_casualties",
-                        when(col("Number_of_casualties").isNull(), lit(1))
-                        .otherwise(col("Number_of_casualties").cast("int")))
-        
+        # Clean timestamp
         df = df.withColumn("Time_cleaned", expr("try_cast(Time as timestamp)"))
 
-        # Normalize categorical columns: strip whitespace and convert to lowercase
+        # Normalize categorical fields
         categorical_columns = [
-            "Age_band_of_driver", "Sex_of_driver", "Sex_of_casualty",
-            "Age_band_of_casualty", "Accident_severity"
+            "Age_band_of_driver",
+            "Sex_of_driver",
+            "Sex_of_casualty",
+            "Age_band_of_casualty",
+            "Accident_severity"
         ]
         for col_name in categorical_columns:
             df = df.withColumn(col_name, lower(trim(col(col_name))))
 
-        # Replace 'na', '-', and empty strings with nulls in validation columns
+        # Replace invalid values with null
         for col_name in ["Day_of_week", "Cause_of_accident"]:
-            df = df.withColumn(col_name, when((col(col_name).isin("na", "-", "")), None).otherwise(col(col_name)))
-        
-        cleaned_df = df.withColumn("is_valid",
+            df = df.withColumn(
+                col_name,
+                when((col(col_name).isin("na", "-", "")), None).otherwise(col(col_name))
+            )
+
+        # Mark valid vs invalid data
+        cleaned_df = df.withColumn(
+            "is_valid",
             when(
-                col("Time_cleaned").isNotNull() &
-                col("Day_of_week").isNotNull() &
-                col("Age_band_of_driver").isin(valid_age_band) &
-                col("Sex_of_driver").isin(valid_sex) &
-                col("Sex_of_casualty").isin(valid_sex) &
-                col("Age_band_of_casualty").isin(valid_age_band) &
-                col("Cause_of_accident").isNotNull() &
-                col("Area_accident_occured").isNotNull() &
-                col("Accident_severity").isin(valid_accident_severity),
-                True
+                col("Time_cleaned").isNotNull()
+                & col("Day_of_week").isNotNull()
+                & col("Age_band_of_driver").isin(valid_age_band)
+                & col("Sex_of_driver").isin(valid_sex)
+                & col("Sex_of_casualty").isin(valid_sex)
+                & col("Age_band_of_casualty").isin(valid_age_band)
+                & col("Cause_of_accident").isNotNull()
+                & col("Area_accident_occured").isNotNull()
+                & col("Accident_severity").isin(valid_accident_severity),
+                True,
             ).otherwise(False)
         )
-        display(cleaned_df)
-        # Split good and bad data
+
+        # Split valid/invalid datasets
         good_data_df = cleaned_df.filter(col("is_valid") == True).drop("is_valid")
         bad_data_df = cleaned_df.filter(col("is_valid") == False).drop("is_valid")
 
-        # Write good data to Delta format and register as table
-        try:
-            good_data_df.write.format("delta").mode("overwrite").saveAsTable("csb_grp_5.autoloader_pipeline.silver_filtered_data")
-            logger.info("Good data written to silver_filtered_data.")
-        except Exception as e:
-            logger.error(f"Failed to write good data to Silver table: {e}")
+        # Save to Silver Layer
+        good_data_df.write.format("delta").mode("overwrite").saveAsTable(
+            "main_cluster.autoloader_pipeline.silver_filtered_data"
+        )
+        bad_data_df.write.format("delta").mode("overwrite").saveAsTable(
+            "main_cluster.autoloader_pipeline.silver_filtered_bad_data"
+        )
 
-        try:
-            bad_data_df.write.format("delta").mode("overwrite").saveAsTable("csb_grp_5.autoloader_pipeline.silver_filtered_bad_data")
-            logger.info("Bad data written to silver_filtered_bad_data.")
-        except Exception as e:
-            logger.error(f"Failed to write bad data to Silver table: {e}")
+        logger.info("Silver layer data processing complete.")
 
     except Exception as e:
         logger.exception(f"Unexpected error occurred: {e}")
@@ -404,8 +414,6 @@ import pandas as pd
 from faker import Faker
 import logging
 import variables
-import uuid
-import os
 import traceback
 
 logging.basicConfig(
@@ -421,10 +429,7 @@ class DataGenerator:
         self.CORRUPTION_RATE = 0.2
 
     def random_choice(self, values):
-        if isinstance(values, list):
-            return random.choice(values)
-        else:
-            return random.choice(values.split(","))
+        return random.choice(values if isinstance(values, list) else values.split(","))
 
     def generate_valid_record(self):
         return {
@@ -438,7 +443,9 @@ class DataGenerator:
             "Type_of_vehicle": self.random_choice(variables.VEHICLE_TYPE),
             "Owner_of_vehicle": self.random_choice("Owner,Government,Other,Unknown"),
             "Service_year_of_vehicle": random.randint(1, 30),
-            "Defect_of_vehicle": self.random_choice("No defect,Brake failure,Steering failure,Tyre burst,Other"),
+            "Defect_of_vehicle": self.random_choice(
+                "No defect,Brake failure,Steering failure,Tyre burst,Other"
+            ),
             "Area_accident_occured": self.random_choice(variables.ACCIDENT_AREA),
             "Lanes_or_Medians": self.random_choice(variables.LANES_OR_MEDIANS),
             "Road_allignment": self.random_choice(variables.ROAD_ALIGNMENT),
@@ -481,27 +488,21 @@ class DataGenerator:
 
     def generate_dataset(self):
         data = []
-        for i in range(self.NUM_RECORDS):
+        for _ in range(self.NUM_RECORDS):
             valid_record = self.generate_valid_record()
-            if random.random() < self.CORRUPTION_RATE:
-                # corrupted = self.generate_corrupted_record(valid_record)
-                # data.append(corrupted)
-                print("Corrupt Data Generated.")
-            else:
+            if random.random() >= self.CORRUPTION_RATE:
                 data.append(valid_record)
-        sdf = spark.createDataFrame(data)
-        return sdf
+        return spark.createDataFrame(data)
 
 if __name__ == "__main__":
     logging.info("Starting dataset generation...")
     try:
         data_generator = DataGenerator(2000)
         sdf = data_generator.generate_dataset()
-        output_path = "/Volumes/databricks_csb_grp_5/default/accident_data"
-        print(f"Count of the rows: {sdf.count()}")
+        output_path = "/Volumes/databricks_main_cluster/default/accident_data"
+        logging.info(f"Row count: {sdf.count()}")
         sdf.write.mode("append").option("header", True).csv(output_path)
-        logging.info("Dataset generated and saved to accident_data_with_corruption.csv")
-        logging.info("Corruption log saved to data_generation.log")
+        logging.info("Dataset successfully generated and saved.")
     except Exception as e:
         logging.error(f"Error saving dataset: {e}")
         traceback.print_exc()
@@ -513,124 +514,74 @@ if __name__ == "__main__":
 <summary>🔹 RBAC.py</summary>
 
 ```sql
-%md
-Created a table to manage user access
-
-%sql
--- Step 1: Create User-Group Mapping Table
-CREATE OR REPLACE TABLE databricks_csb_grp_5.default.user_groups (
+-- Create User-Group Mapping Table
+CREATE OR REPLACE TABLE databricks_main_cluster.default.user_groups (
   username STRING,
   groupname STRING
 );
 
 -- Insert sample user-group data
-INSERT INTO databricks_csb_grp_5.default.user_groups VALUES
+INSERT INTO databricks_main_cluster.default.user_groups VALUES
   ('ayeujjawalsingh@gmail.com', 'data_analysts'),
   ('shashank@gmail.com', 'data_analysts'),
   ('nayan@gmail.com', 'data_readers'),
   ('neha@gmail.com', 'data_readers');
 
--- Step 2: Create Base Table Schema (replace with your actual table)
-
-%sql
-select * from databricks_csb_grp_5.default.silver_filtered_data limit 2
-
-%sql
-SELECT DISTINCT username
-  FROM databricks_csb_grp_5.default.user_groups
-  WHERE username = current_user() AND groupname = 'data_analysts'
-
-%sql
--- Step 3: Create View 1 - Basic Accident Info with group-based masking
-CREATE OR REPLACE VIEW databricks_csb_grp_5.default.vw_accident_basic_info AS
+-- View 1: Basic Accident Info with masking
+CREATE OR REPLACE VIEW databricks_main_cluster.default.vw_accident_basic_info AS
 WITH user_group_flag AS (
   SELECT DISTINCT username
-  FROM databricks_csb_grp_5.default.user_groups
+  FROM databricks_main_cluster.default.user_groups
   WHERE username = current_user() AND groupname = 'data_analysts'
 )
 SELECT
   d.Time,
   d.Day_of_week,
   d.Area_accident_occured,
-  
-  CASE 
-    WHEN ug.username IS NOT NULL THEN d.Sex_of_driver
-    ELSE 'MASKED' 
-  END AS Sex_of_driver,
-  
-  CASE 
-    WHEN ug.username IS NOT NULL THEN d.Age_band_of_driver
-    ELSE 'MASKED'
-  END AS Age_band_of_driver,
-  
-  CASE 
-    WHEN ug.username IS NOT NULL THEN d.Owner_of_vehicle
-    ELSE 'MASKED'
-  END AS Owner_of_vehicle,
-
+  CASE WHEN ug.username IS NOT NULL THEN d.Sex_of_driver ELSE 'MASKED' END AS Sex_of_driver,
+  CASE WHEN ug.username IS NOT NULL THEN d.Age_band_of_driver ELSE 'MASKED' END AS Age_band_of_driver,
+  CASE WHEN ug.username IS NOT NULL THEN d.Owner_of_vehicle ELSE 'MASKED' END AS Owner_of_vehicle,
   d.Type_of_collision,
   d.Weather_conditions,
   d.Light_conditions
-FROM databricks_csb_grp_5.default.silver_filtered_data d
+FROM databricks_main_cluster.default.silver_filtered_data d
 LEFT JOIN user_group_flag ug ON TRUE;
 
--- Step 4: Create View 2 - Vehicle and Driver Details with masking
-CREATE OR REPLACE VIEW databricks_csb_grp_5.default.vw_vehicle_driver_details AS
+-- View 2: Vehicle and Driver Details
+CREATE OR REPLACE VIEW databricks_main_cluster.default.vw_vehicle_driver_details AS
 WITH user_group_flag AS (
   SELECT DISTINCT username
-  FROM databricks_csb_grp_5.default.user_groups
+  FROM databricks_main_cluster.default.user_groups
   WHERE username = current_user() AND groupname = 'data_analysts'
 )
 SELECT
-  d.Time,  d.Area_accident_occured,  
-  CASE 
-    WHEN ug.username IS NOT NULL THEN d.Sex_of_driver
-    ELSE 'MASKED' 
-  END AS Sex_of_driver,
-    CASE 
-    WHEN ug.username IS NOT NULL THEN d.Age_band_of_driver
-    ELSE 'MASKED'
-  END AS Age_band_of_driver,
-    CASE 
-    WHEN ug.username IS NOT NULL THEN d.Owner_of_vehicle
-    ELSE 'MASKED'
-  END AS Owner_of_vehicle,
-  
+  d.Time,
+  d.Area_accident_occured,
+  CASE WHEN ug.username IS NOT NULL THEN d.Sex_of_driver ELSE 'MASKED' END AS Sex_of_driver,
+  CASE WHEN ug.username IS NOT NULL THEN d.Age_band_of_driver ELSE 'MASKED' END AS Age_band_of_driver,
+  CASE WHEN ug.username IS NOT NULL THEN d.Owner_of_vehicle ELSE 'MASKED' END AS Owner_of_vehicle,
   d.Educational_level,
   d.Vehicle_driver_relation,
   d.Driving_experience,
   d.Type_of_vehicle,
   d.Service_year_of_vehicle,
   d.Defect_of_vehicle
-FROM databricks_csb_grp_5.default.silver_filtered_data d
+FROM databricks_main_cluster.default.silver_filtered_data d
 LEFT JOIN user_group_flag ug ON TRUE;
 
--- Step 5: Create View 3 - Road and Environmental Conditions with masking
-CREATE OR REPLACE VIEW databricks_csb_grp_5.default.vw_road_environmental_conditions AS
+-- View 3: Road and Environmental Conditions
+CREATE OR REPLACE VIEW databricks_main_cluster.default.vw_road_environmental_conditions AS
 WITH user_group_flag AS (
   SELECT DISTINCT username
-  FROM databricks_csb_grp_5.default.user_groups
+  FROM databricks_main_cluster.default.user_groups
   WHERE username = current_user() AND groupname = 'data_analysts'
 )
 SELECT
   d.Time,
   d.Area_accident_occured,
-  
-  CASE 
-    WHEN ug.username IS NOT NULL THEN d.Sex_of_driver
-    ELSE 'MASKED' 
-  END AS Sex_of_driver,
-  
-  CASE 
-    WHEN ug.username IS NOT NULL THEN d.Age_band_of_driver
-    ELSE 'MASKED'
-  END AS Age_band_of_driver,
-  
-  CASE 
-    WHEN ug.username IS NOT NULL THEN d.Owner_of_vehicle
-    ELSE 'MASKED'
-  END AS Owner_of_vehicle,
-
+  CASE WHEN ug.username IS NOT NULL THEN d.Sex_of_driver ELSE 'MASKED' END AS Sex_of_driver,
+  CASE WHEN ug.username IS NOT NULL THEN d.Age_band_of_driver ELSE 'MASKED' END AS Age_band_of_driver,
+  CASE WHEN ug.username IS NOT NULL THEN d.Owner_of_vehicle ELSE 'MASKED' END AS Owner_of_vehicle,
   d.Road_allignment,
   d.Road_surface_type,
   d.Road_surface_conditions,
@@ -638,15 +589,8 @@ SELECT
   d.Light_conditions,
   d.Lanes_or_Medians,
   d.Types_of_Junction
-FROM databricks_csb_grp_5.default.silver_filtered_data d
+FROM databricks_main_cluster.default.silver_filtered_data d
 LEFT JOIN user_group_flag ug ON TRUE;
-
-%sql
---update databricks_csb_grp_5.default.user_groups set groupname='data_analysts' where username='shashank@gmail.com'
-update databricks_csb_grp_5.default.user_groups set groupname='data_readers' where username='shashank@gmail.com'
-
-%sql
-select * from databricks_csb_grp_5.default.vw_accident_basic_info
 ```
 
 </details>
@@ -655,173 +599,92 @@ select * from databricks_csb_grp_5.default.vw_accident_basic_info
 <summary>🔹 RoadAccidentAnalysisNotebook.py</summary>
 
 ```sql
-%md
-# 🚦 Road Accident Analysis – Gold Layer Dashboard
-
-This notebook contains SQL queries on the Gold Layer table:
-**`databricks_csb_grp_5.default.gold_accident_data`**
-
-The queries generate insights for the final dashboard:
-- Area-wise accident trends
-- Accident severity breakdown
-- Demographic analysis (Age, Gender, Driving Experience)
-- Environmental factors (Weather, Road, Light conditions)
-- Causes of accidents
-
-%md
-## 1. Area-wise Total Accidents
-Shows which **areas** have the highest number of accidents.
-
-%sql
+-- Area-wise Total Accidents
 SELECT 
     Area_accident_occured AS area,
     Total_Accidents
-FROM databricks_csb_grp_5.default.area_year_accidents
+FROM databricks_main_cluster.default.area_year_accidents
 ORDER BY total_accidents DESC;
 
-%md
-## 2. Day of Week Accident Trend
-Displays accident counts by **day of the week** (Monday–Sunday).
-
-%sql
+-- Day of Week Accident Trend
 SELECT 
     Day_of_week,
     COUNT(*) AS total_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 GROUP BY Day_of_week
 ORDER BY total_accidents DESC;
 
-%md
-## 3. Hour of Day Accident Trend
-Shows accidents by **hour of the day** to identify **peak accident hours**.
-
-%sql
--- not required
+-- Hour of Day Accident Trend
 SELECT 
     hour(try_to_timestamp(Time, 'H:mm:ss')) AS hour_of_day,
     COUNT(*) AS total_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 GROUP BY hour(try_to_timestamp(Time, 'H:mm:ss'))
 ORDER BY hour_of_day;
 
-%md
-## 4. Accident Severity Distribution
-Provides a severity split (Fatal, Serious, Minor, Slight injury).
-
-%sql
+-- Accident Severity Distribution
 SELECT 
     Accident_severity,
     Count
-FROM csb_grp_5.autoloader_pipeline.accident_severity_breakdown;
+FROM main_cluster.autoloader_pipeline.accident_severity_breakdown;
 
-%md
-## 5. Gender-wise Fatalities
-Breaks down **fatal accidents by gender**.
-
-dbutils.widgets.dropdown(
-    name="severity",                # widget variable name
-    defaultValue="Serious Injury",    # default value
-    choices=["Fatal injury", "Serious Injury", "Slight Injury"], 
-    label="Select Accident Severity"
-)
-
-%sql
+-- Gender-wise Fatalities
 SELECT 
     Sex_of_driver, 
     Casualty_severity,
     COUNT(*) AS death_count
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 WHERE Casualty_severity = :severity
 GROUP BY Sex_of_driver, Casualty_severity;
 
-%md
-## 6. Age Band Fatalities
-Shows **fatalities by driver’s age group**.
-
-%sql
+-- Age Band Fatalities
 SELECT 
     Age_band_of_driver,
     COUNT(*) AS fatal_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 WHERE Casualty_severity = 'Serious Injury'
 GROUP BY Age_band_of_driver
 ORDER BY fatal_accidents DESC;
 
-%md
-## 7. Driving Experience vs Accident Count
-Compares accident counts across **driving experience levels**.
-
-%sql
+-- Driving Experience vs Accident Count
 SELECT 
     Driving_experience,
     COUNT(*) AS total_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 GROUP BY Driving_experience
 ORDER BY total_accidents DESC;
 
-%md
-## 8. Weather-wise Accidents
-Displays accidents across **weather conditions**.
-
-%sql
--- discard
--- SELECT 
---     Weather_conditions,
---     COUNT(*) AS total_accidents
--- FROM databricks_csb_grp_5.default.gold_accident_data
--- GROUP BY Weather_conditions
--- ORDER BY total_accidents DESC;
-
-dbutils.widgets.dropdown(
-    name="weather",
-    defaultValue="Normal",
-    choices=["Normal", "Raining", "Fog", "Other"],
-    label="Select Weather Condition"
-)
-
-%sql
+-- Weather-wise Accidents (Top 10 causes under selected weather)
 SELECT 
     Cause_of_accident,
     COUNT(*) AS total_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 WHERE Weather_conditions IN (:weather)
 GROUP BY Cause_of_accident
 ORDER BY total_accidents DESC
 LIMIT 10;
 
-%md
-## 9. Road Surface Conditions
-Shows accident counts based on **road surface condition**.
-
-%sql
+-- Road Surface Conditions
 SELECT 
     Road_surface_conditions,
     COUNT(*) AS total_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 GROUP BY Road_surface_conditions
 ORDER BY total_accidents DESC;
 
-%md
-## 10. Light Condition Accidents
-Breaks accidents down by **light conditions**.
-
-%sql
+-- Light Condition Accidents
 SELECT 
     Light_conditions,
     COUNT(*) AS total_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 GROUP BY Light_conditions
 ORDER BY total_accidents DESC;
 
-%md
-## 11. Top 10 Causes of Accidents
-Lists the **top 10 reasons for accidents**.
-
-%sql
+-- Top 10 Causes of Accidents
 SELECT 
     Cause_of_accident,
     COUNT(*) AS total_accidents
-FROM csb_grp_5.autoloader_pipeline.death_report_details
+FROM main_cluster.autoloader_pipeline.death_report_details
 GROUP BY Cause_of_accident
 ORDER BY total_accidents DESC
 LIMIT 10;
@@ -838,72 +701,7 @@ import calendar
 DAYS_OF_WEEKS = list(calendar.day_name)
 VEHICLE_TYPE = "Automobile,Public (> 45 seats),Lorry (41?100Q),Public (13?45 seats),Lorry (11?40Q),Long lorry,Public (12 seats),Taxi,Pick up upto 10Q,Stationwagen,Ridden horse,Other,Bajaj,Turbo,Motorcycle,Special vehicle,Bicycle"
 ACCIDENT_AREA = "Residential areas,Office areas,Recreational areas,Industrial areas,Other,Church areas,Market areas,Unknown,Rural village areas,Outside rural areas,Hospital areas,School areas"
-LANES_OR_MEDIANS = "Undivided Two way,other,Double carriageway (median),One way,Two-way (divided with solid lines road marking),Two-way (divided with broken lines road marking),Unknown"
-EDUCATION_LEVEL = "Above high school,Junior high school,Elementary school,High school,Unknown,Illiterate,Writing & reading"
-ROAD_ALIGNMENT = (
-    "Tangent road with flat terrain,"
-    "Tangent road with mild grade and flat terrain,"
-    "Escarpments,"
-    "Tangent road with rolling terrain,"
-    "Gentle horizontal curve,"
-    "Tangent road with mountainous terrain and,"
-    "Steep grade downward with mountainous terrain,"
-    "Sharp reverse curve,"
-    "Steep grade upward with mountainous terrain"
-)
-
-TYPES_OF_JUNCTION = "No junction,Y Shape,Crossing,O Shape,Other,Unknown,T Shape,X Shape"
-
-ROAD_SURFACE_TYPE = "Asphalt roads,Earth roads,Asphalt roads with some distress,Gravel roads,Other"
-
-ROAD_SURFACE_CONDITIONS = "Dry,Wet or damp,Snow,Flood over 3cm. deep"
-
-LIGHT_CONDITIONS = "Daylight,Darkness - lights lit,Darkness - no lighting,Darkness - lights unlit"
-
-WEATHER_CONDITIONS = "Normal,Raining,Raining and Windy,Cloudy,Other,Windy,Snow,Unknown,Fog or mist"
-
-TYPE_OF_COLLISION = (
-    "Collision with roadside-parked vehicles,"
-    "Vehicle with vehicle collision,"
-    "Collision with roadside objects,"
-    "Collision with animals,"
-    "Other,"
-    "Rollover,"
-    "Fall from vehicles,"
-    "Collision with pedestrians,"
-    "With Train,"
-    "Unknown"
-)
-
-VEHICLE_MOVEMENT = (
-    "Going straight,U-Turn,Moving Backward,Turnover,Waiting to go,Getting off,"
-    "Reversing,Unknown,Parked,Stopping,Overtaking,Other,Entering a junction"
-)
-
-CASUALTY_CLASS = "na,Driver or rider,Pedestrian,Passenger"
-
-FITNESS_OF_CASUALITY = "Normal,Deaf,Other,Blind,NormalNormal"
-
-PEDESTRIAN_MOVEMENT = (
-    "Not a Pedestrian,"
-    "Crossing from driver's nearside,"
-    "Crossing from nearside - masked by parked or statioNot a Pedestrianry vehicle,"
-    "Unknown or other,"
-    "Crossing from offside - masked by  parked or statioNot a Pedestrianry vehicle,"
-    "In carriageway, statioNot a Pedestrianry - not crossing  (standing or playing),"
-    "Walking along in carriageway, back to traffic,"
-    "Walking along in carriageway, facing traffic,"
-    "In carriageway, statioNot a Pedestrianry - not crossing  (standing or playing) - masked by parked or statioNot a Pedestrianry vehicle"
-)
-
-CAUSE_OF_ACCIDENT = (
-    "Moving Backward,Overtaking,Changing lane to the left,Changing lane to the right,Overloading,"
-    "Other,No priority to vehicle,No priority to pedestrian,No distancing,Getting off the vehicle improperly,"
-    "Improper parking,Overspeed,Driving carelessly,Driving at high speed,Driving to the left,Unknown,Overturning,"
-    "Turnover,Driving under the influence of drugs,Drunk driving"
-)
-
-ACCIDENT_SEVERITY = "Slight Injury,Serious Injury,Fatal injury"
+LANES_OR_MEDIANS = "Undivided Two way,other,Double carriageway (median),One way,Two-way (divided with solid lines road marking),Two-way (divided with broken lines road marking
 ```
 
 </details>
