@@ -36,63 +36,173 @@ Here’s the **Databricks Job & Pipeline image** (uploaded in repository):
 
 
 ## 📊 Dashboard Insights
+
 The final dashboards provide **business-ready visualizations** from the Gold Layer tables.  
 
-**Area-Wise Total Accidents** – Identifies accident hotspots for infrastructure planning.  
+### Area-Wise Total Accidents
+Identifies accident hotspots for infrastructure planning.
+```sql
+SELECT 
+    Area_accident_occured AS area,
+    Total_Accidents
+FROM csb_grp_5.autoloader_pipeline.area_year_accidents
+ORDER BY total_accidents DESC;
+```
 <div align="center">
     <img src="assets/AreaWiseTotalAccidents.png" width="400" />
 </div>
 
-**Day of Week Accident Trend** – Highlights weekdays/weekends with higher risks.  
+### Day of Week Accident Trend
+Highlights weekdays/weekends with higher risks.
+```sql
+SELECT 
+    Day_of_week,
+    COUNT(*) AS total_accidents
+FROM csb_grp_5.autoloader_pipeline.death_report_details
+GROUP BY Day_of_week
+ORDER BY 
+    CASE Day_of_week
+        WHEN 'Sunday' THEN 1
+        WHEN 'Monday' THEN 2
+        WHEN 'Tuesday' THEN 3
+        WHEN 'Wednesday' THEN 4
+        WHEN 'Thursday' THEN 5
+        WHEN 'Friday' THEN 6
+        WHEN 'Saturday' THEN 7
+    END;
+```
 <div align="center">
     <img src="assets/DayOfWeekAccidentTrend.png" width="400" />
 </div>
 
-**Hour of Day Accident Trend** – Shows peak accident hours for better resource allocation.  
+### Hour of Day Accident Trend
+Shows peak accident hours for better resource allocation.
+```sql
+SELECT 
+    hour(try_to_timestamp(Time, 'H:mm:ss')) AS hour_of_day,
+    COUNT(*) AS total_accidents
+FROM csb_grp_5.autoloader_pipeline.death_report_details
+GROUP BY hour(try_to_timestamp(Time, 'H:mm:ss'))
+ORDER BY hour_of_day;
+```
 <div align="center">
     <img src="assets/HourOfDayAccidentTrend.png" width="400" />
 </div>
 
-**Accident Severity Distribution** – Breakdown into fatal, serious, and minor categories.  
+### Accident Severity Distribution
+Breakdown into fatal, serious, and minor categories.
+```sql
+SELECT 
+    Accident_severity,
+    Count
+FROM csb_grp_5.autoloader_pipeline.accident_severity_breakdown;
+```
 <div align="center">
     <img src="assets/AccidentSeverityDistribution.png" width="400" />
 </div>
 
-**Gender-wise Fatalities** – Compares accident impact by gender.  
+### Gender-wise Fatalities
+Compares accident impact by gender.
+```sql
+SELECT 
+    Sex_of_driver, 
+    Casualty_severity,
+    COUNT(*) AS death_count
+FROM csb_grp_5.autoloader_pipeline.death_report_details
+WHERE Casualty_severity = :severity
+GROUP BY Sex_of_driver, Casualty_severity;
+```
 <div align="center">
     <img src="assets/GenderWiseFatalities.png" width="400" />
 </div>
 
-**Age Band Fatalities** – Identifies vulnerable age groups.  
+### Age Band Fatalities
+Identifies vulnerable age groups.
+```sql
+SELECT 
+    Age_band_of_driver,
+    COUNT(*) AS fatal_accidents
+FROM csb_grp_5.autoloader_pipeline.death_report_details
+WHERE Casualty_severity = 'Serious Injury'
+GROUP BY Age_band_of_driver
+ORDER BY fatal_accidents DESC;
+```
 <div align="center">
     <img src="assets/AgeBandFatalities.png" width="400" />
 </div>
 
-**Driving Experience vs. Accident Count** – Links experience level with accident likelihood.  
+### Driving Experience vs. Accident Count
+Links experience level with accident likelihood.
+```sql
+SELECT 
+    Driving_experience,
+    COUNT(*) AS total_accidents
+FROM csb_grp_5.autoloader_pipeline.death_report_details
+GROUP BY Driving_experience
+ORDER BY total_accidents DESC;
+```
 <div align="center">
     <img src="assets/DrivingExperiencevsAccidentCount.png" width="400" />
 </div>
 
-**Weather-wise Accidents** – Shows accident distribution under Normal, Rain, Fog, etc.  
+### Weather-wise Accidents
+Shows accident distribution under Normal, Rain, Fog, etc.
+```sql
+SELECT 
+    Cause_of_accident,
+    COUNT(*) AS total_accidents
+FROM csb_grp_5.autoloader_pipeline.death_report_details
+WHERE Weather_conditions IN (:weather)
+GROUP BY Cause_of_accident
+ORDER BY total_accidents DESC
+LIMIT 10;
+```
 <div align="center">
     <img src="assets/WeatherWiseAccidents.png" width="400" />
 </div>
 
-**Road Surface Conditions** – Correlates road quality with accident frequency.  
+### Road Surface Conditions
+Correlates road quality with accident frequency.
+```sql
+SELECT 
+    Road_surface_conditions,
+    COUNT(*) AS total_accidents
+FROM csb_grp_5.autoloader_pipeline.death_report_details
+GROUP BY Road_surface_conditions
+ORDER BY total_accidents DESC;
+```
 <div align="center">
     <img src="assets/RoadSurfaceConditions.png" width="400" />
 </div>
 
-**Light Condition Accidents** – Compares daylight vs. night-time accidents.  
+### Light Condition Accidents
+Compares daylight vs. night-time accidents.
+```sql
+SELECT 
+    Light_conditions,
+    COUNT(*) AS total_accidents
+FROM csb_grp_5.autoloader_pipeline.death_report_details
+GROUP BY Light_conditions
+ORDER BY total_accidents DESC;
+```
 <div align="center">
     <img src="assets/LightConditionAccidents.png" width="400" />
 </div>
 
-**Top 10 Causes of Accidents** – Lists overspeeding, distractions, and other key causes.  
+### Top 10 Causes of Accidents
+Lists overspeeding, distractions, and other key causes.
+```sql
+SELECT 
+    Cause_of_accident,
+    COUNT(*) AS total_accidents
+FROM csb_grp_5.autoloader_pipeline.death_report_details
+GROUP BY Cause_of_accident
+ORDER BY total_accidents DESC
+LIMIT 10;
+```
 <div align="center">
     <img src="assets/Top10CausesOfAccidents.png" width="400" />
 </div>
-
 
 ## 📂 Repository Structure
 ```
