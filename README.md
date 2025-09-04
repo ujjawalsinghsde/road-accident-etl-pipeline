@@ -30,44 +30,68 @@ The pipeline follows the **Medallion Architecture (Bronze → Silver → Gold)**
 ## 📊 Pipeline Workflow
 Here’s the **Databricks Job & Pipeline image** (uploaded in repository):  
 
-![Databricks Pipeline](assets/job&pipeline.png)  
+<div align="center">
+    <img src="assets/job&pipeline.png" width="400" />
+</div>
 
 
 ## 📊 Dashboard Insights
 The final dashboards provide **business-ready visualizations** from the Gold Layer tables.  
 
 **Area-Wise Total Accidents** – Identifies accident hotspots for infrastructure planning.  
-![Area Wise](assets/AreaWiseTotalAccidents.png)
+<div align="center">
+    <img src="assets/AreaWiseTotalAccidents.png" width="400" />
+</div>
 
 **Day of Week Accident Trend** – Highlights weekdays/weekends with higher risks.  
-![Day of Week](assets/DayOfWeekAccidentTrend.png)
+<div align="center">
+    <img src="assets/DayOfWeekAccidentTrend.png" width="400" />
+</div>
 
 **Hour of Day Accident Trend** – Shows peak accident hours for better resource allocation.  
-![Hour of Day](assets/HourOfDayAccidentTrend.png)
+<div align="center">
+    <img src="assets/HourOfDayAccidentTrend.png" width="400" />
+</div>
 
 **Accident Severity Distribution** – Breakdown into fatal, serious, and minor categories.  
-![Severity Distribution](assets/AccidentSeverityDistribution.png)
+<div align="center">
+    <img src="assets/AccidentSeverityDistribution.png" width="400" />
+</div>
 
 **Gender-wise Fatalities** – Compares accident impact by gender.  
-![Gender Fatalities](assets/GenderWiseFatalities.png)
+<div align="center">
+    <img src="assets/GenderWiseFatalities.png" width="400" />
+</div>
 
 **Age Band Fatalities** – Identifies vulnerable age groups.  
-![Age Band Fatalities](assets/AgeBandFatalities.png)
+<div align="center">
+    <img src="assets/AgeBandFatalities.png" width="400" />
+</div>
 
 **Driving Experience vs. Accident Count** – Links experience level with accident likelihood.  
-![Driving Experience](assets/DrivingExperiencevsAccidentCount.png)
+<div align="center">
+    <img src="assets/DrivingExperiencevsAccidentCount.png" width="400" />
+</div>
 
 **Weather-wise Accidents** – Shows accident distribution under Normal, Rain, Fog, etc.  
-![Weather Conditions](assets/WeatherWiseAccidents.png)
+<div align="center">
+    <img src="assets/WeatherWiseAccidents.png" width="400" />
+</div>
 
 **Road Surface Conditions** – Correlates road quality with accident frequency.  
-![Road Surface](assets/RoadSurfaceConditions.png)
+<div align="center">
+    <img src="assets/RoadSurfaceConditions.png" width="400" />
+</div>
 
 **Light Condition Accidents** – Compares daylight vs. night-time accidents.  
-![Light Conditions](assets/LightConditionAccidents.png)
+<div align="center">
+    <img src="assets/LightConditionAccidents.png" width="400" />
+</div>
 
 **Top 10 Causes of Accidents** – Lists overspeeding, distractions, and other key causes.  
-![Causes of Accidents](assets/Top10CausesOfAccidents.png)
+<div align="center">
+    <img src="assets/Top10CausesOfAccidents.png" width="400" />
+</div>
 
 
 ## 📂 Repository Structure
